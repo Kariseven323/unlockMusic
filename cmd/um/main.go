@@ -383,7 +383,15 @@ func (p *processor) process(inputFile string, allDec []common.DecoderFactory) er
 	audio := io.MultiReader(header, dec)
 	params.AudioExt = sniff.AudioExtensionWithFallback(header.Bytes(), ".mp3")
 
-	if p.updateMetadata {
+	// Check if this is an MGG file and disable metadata update for compatibility
+	inputExt := strings.ToLower(filepath.Ext(inputFile))
+	isMggFile := strings.HasPrefix(inputExt, ".mgg")
+
+	if isMggFile && p.updateMetadata {
+		logger.Info("MGG file detected: disabling metadata update for music tag editor compatibility")
+	}
+
+	if p.updateMetadata && !isMggFile {
 		if audioMetaGetter, ok := dec.(common.AudioMetaGetter); ok {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
@@ -430,7 +438,7 @@ func (p *processor) process(inputFile string, allDec []common.DecoderFactory) er
 		}
 	}
 
-	if p.updateMetadata && params.Meta != nil {
+	if p.updateMetadata && !isMggFile && params.Meta != nil {
 		if coverGetter, ok := dec.(common.CoverImageGetter); ok {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
