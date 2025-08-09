@@ -53,8 +53,17 @@ class UnlockMusicGUI:
 
         # 设置图标（如果有的话）
         try:
-            self.root.iconbitmap("icon.ico")
-        except:
+            # 尝试加载PNG图标
+            if os.path.exists("unlockMusic.png"):
+                # 对于PNG格式，需要使用PhotoImage
+                icon_image = tk.PhotoImage(file="unlockMusic.png")
+                self.root.iconphoto(True, icon_image)
+            elif os.path.exists("icon.ico"):
+                # 备用ICO格式
+                self.root.iconbitmap("icon.ico")
+        except Exception as e:
+            # 如果图标加载失败，记录但不影响程序运行
+            print(f"图标加载失败: {e}")
             pass
 
     def setup_variables(self):
@@ -74,6 +83,16 @@ class UnlockMusicGUI:
 
         self.file_queue = []  # 待处理文件队列
         self.is_processing = False
+
+        # 动画相关变量
+        self.animation_running = False
+        self.fade_alpha = 0.0
+        self.status_colors = {
+            'idle': '#2E8B57',      # 海绿色
+            'processing': '#FF6347', # 番茄红
+            'success': '#32CD32',    # 酸橙绿
+            'error': '#DC143C'       # 深红色
+        }
 
     def setup_ui(self):
         """设置用户界面"""
@@ -202,6 +221,10 @@ class UnlockMusicGUI:
 
         self.stop_btn = ttk.Button(control_frame, text="停止处理", command=self.stop_processing, state="disabled")
         self.stop_btn.pack(side=tk.LEFT, padx=(0, 10))
+
+        # 状态指示器
+        self.status_label = ttk.Label(control_frame, text="● 就绪", foreground=self.status_colors['idle'])
+        self.status_label.pack(side=tk.LEFT, padx=(10, 10))
 
         # 进度条
         self.progress = ttk.Progressbar(control_frame, mode='determinate')
@@ -395,6 +418,8 @@ class UnlockMusicGUI:
                 self.file_listbox.insert(tk.END, os.path.basename(file_path))
 
         self.log_message(f"✅ 已添加 {len(files)} 个文件到处理队列")
+        # 显示文件添加动画
+        self.show_file_added_animation()
 
     def clear_file_list(self):
         """清空文件列表"""
@@ -437,6 +462,13 @@ class UnlockMusicGUI:
         self.stop_btn.config(state="normal")
         self.progress.config(maximum=len(self.file_queue), value=0)
 
+        # 更新状态指示器
+        self.update_status_indicator('processing', '处理中')
+        self.animate_status_indicator('processing')
+
+        # 启动进度条动画
+        self.animate_progress_bar()
+
         # 在新线程中处理文件
         processing_thread = threading.Thread(target=self._process_files, daemon=True)
         processing_thread.start()
@@ -446,6 +478,7 @@ class UnlockMusicGUI:
         self.is_processing = False
         self.start_btn.config(state="normal")
         self.stop_btn.config(state="disabled")
+        self.update_status_indicator('idle', '已停止')
         self.log_message("⏹️ 处理已停止")
 
     def _process_files(self):
@@ -538,6 +571,165 @@ class UnlockMusicGUI:
         self.is_processing = False
         self.start_btn.config(state="normal")
         self.stop_btn.config(state="disabled")
+        self.update_status_indicator('success', '完成')
+        # 添加完成动画
+        self.show_completion_animation()
+
+    def show_startup_animation(self):
+        """显示启动动画 - 窗口淡入效果"""
+        try:
+            # Windows系统支持窗口透明度
+            if os.name == 'nt':
+                self.root.attributes('-alpha', 0.0)
+                self.fade_in_window()
+            else:
+                # 其他系统使用简单的缩放动画
+                self.scale_in_window()
+        except:
+            # 如果不支持动画，直接显示
+            pass
+
+    def fade_in_window(self):
+        """窗口淡入动画"""
+        if self.fade_alpha < 1.0:
+            self.fade_alpha += 0.05
+            try:
+                self.root.attributes('-alpha', self.fade_alpha)
+            except:
+                pass
+            self.root.after(30, self.fade_in_window)
+
+    def scale_in_window(self):
+        """窗口缩放进入动画"""
+        # 简单的几何动画效果
+        original_geometry = self.root.geometry()
+        # 这里可以添加更复杂的缩放逻辑
+        pass
+
+    def show_file_added_animation(self):
+        """文件添加时的动画反馈"""
+        try:
+            # 让文件列表框闪烁一下
+            original_bg = self.file_listbox.cget('bg')
+            self.file_listbox.config(bg='lightgreen')
+
+            # 创建一个临时的"已添加"提示
+            added_label = tk.Label(self.root, text="✅ 文件已添加",
+                                 font=("Arial", 10),
+                                 fg="green", bg=self.root.cget('bg'))
+
+            # 获取文件列表框的位置来定位提示
+            try:
+                x = self.file_listbox.winfo_x() + self.file_listbox.winfo_width() - 100
+                y = self.file_listbox.winfo_y() + 10
+                added_label.place(x=x, y=y)
+            except:
+                added_label.place(relx=0.8, rely=0.4)
+
+            # 1秒后移除提示和恢复背景色
+            self.root.after(200, lambda: self.file_listbox.config(bg=original_bg))
+            self.root.after(1000, lambda: added_label.destroy())
+        except Exception as e:
+            print(f"文件添加动画失败: {e}")
+            pass
+
+    def show_completion_animation(self):
+        """处理完成时的动画"""
+        try:
+            # 创建一个临时的成功消息标签
+            success_label = tk.Label(self.root, text="🎉 处理完成！",
+                                   font=("Arial", 14, "bold"),
+                                   fg="green", bg=self.root.cget('bg'))
+            success_label.place(relx=0.5, rely=0.5, anchor="center")
+
+            # 让成功消息淡出
+            self.fade_out_success_message(success_label, 1.0)
+
+            # 让进度条变绿
+            original_bg = self.progress.cget('background') if hasattr(self.progress, 'cget') else None
+            # 2秒后恢复
+            self.root.after(2000, lambda: self.reset_progress_style())
+        except Exception as e:
+            print(f"动画效果失败: {e}")
+            pass
+
+    def fade_out_success_message(self, label, alpha):
+        """成功消息淡出动画"""
+        try:
+            if alpha > 0:
+                # 模拟淡出效果（tkinter不直接支持alpha，使用颜色变化）
+                gray_value = int(255 * (1 - alpha))
+                color = f"#{gray_value:02x}{gray_value:02x}{gray_value:02x}"
+                label.config(fg=color)
+                self.root.after(50, lambda: self.fade_out_success_message(label, alpha - 0.05))
+            else:
+                label.destroy()
+        except:
+            try:
+                label.destroy()
+            except:
+                pass
+
+    def reset_progress_style(self):
+        """重置进度条样式"""
+        try:
+            # 重置进度条值
+            self.progress.config(value=0)
+        except:
+            pass
+
+    def animate_progress_bar(self):
+        """进度条动画效果"""
+        if self.is_processing:
+            # 添加一些视觉反馈
+            try:
+                current_value = self.progress['value']
+                # 可以添加一些波动效果
+                self.root.after(100, self.animate_progress_bar)
+            except:
+                pass
+
+    def update_status_indicator(self, status, text):
+        """更新状态指示器"""
+        try:
+            color = self.status_colors.get(status, self.status_colors['idle'])
+            self.status_label.config(text=f"● {text}", foreground=color)
+        except:
+            pass
+
+    def animate_status_indicator(self, status):
+        """状态指示器动画效果"""
+        if status == 'processing':
+            # 处理中的闪烁效果
+            self.blink_status_indicator()
+
+    def blink_status_indicator(self):
+        """状态指示器闪烁效果"""
+        if self.is_processing:
+            try:
+                current_color = self.status_label.cget('foreground')
+                new_color = self.status_colors['processing'] if current_color != self.status_colors['processing'] else '#FFB6C1'
+                self.status_label.config(foreground=new_color)
+                self.root.after(500, self.blink_status_indicator)
+            except:
+                pass
+
+    def add_button_hover_effects(self):
+        """为按钮添加悬停效果"""
+        def on_enter(event, button):
+            button.config(cursor="hand2")
+
+        def on_leave(event, button):
+            button.config(cursor="")
+
+        # 为主要按钮添加悬停效果
+        try:
+            self.start_btn.bind("<Enter>", lambda e: on_enter(e, self.start_btn))
+            self.start_btn.bind("<Leave>", lambda e: on_leave(e, self.start_btn))
+            self.stop_btn.bind("<Enter>", lambda e: on_enter(e, self.stop_btn))
+            self.stop_btn.bind("<Leave>", lambda e: on_leave(e, self.stop_btn))
+        except:
+            pass
 
     def run(self):
         """运行GUI应用"""
@@ -548,6 +740,10 @@ class UnlockMusicGUI:
             self.log_message(f"✅ 找到um.exe: {self.um_exe_path}")
         else:
             self.log_message("⚠️ 未找到um.exe，请确保已编译并放置在正确位置")
+
+        # 启用动画效果
+        self.add_button_hover_effects()
+        self.show_startup_animation()
 
         self.root.mainloop()
 

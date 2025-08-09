@@ -19,7 +19,7 @@ if errorlevel 1 (
 )
 
 echo Step 3: Packaging Python GUI with backend...
-pyinstaller --onefile --windowed --add-binary "um.exe;." --name "UnlockMusicGUI" --hidden-import=tkinter --hidden-import=tkinter.scrolledtext gui_app.py
+pyinstaller --onefile --windowed --icon="unlockMusic.png" --add-binary "um.exe;." --name "UnlockMusicGUI" --hidden-import=tkinter --hidden-import=tkinter.scrolledtext gui_app.py
 if errorlevel 1 (
     echo Failed to package GUI
     pause
