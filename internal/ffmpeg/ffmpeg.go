@@ -102,13 +102,16 @@ func updateMetaFFmpeg(ctx context.Context, outPath string, params *UpdateMetadat
 	}
 
 	// set file metadata
+	// Add vendor field for VorbisComment compliance (fixes music tag editor compatibility)
+	out.AddMetadata("", "vendor", "unlock-music.dev")
+
 	album := params.Meta.GetAlbum()
 	if album != "" {
 		out.AddMetadata("", "album", album)
 	}
 
 	title := params.Meta.GetTitle()
-	if album != "" {
+	if title != "" {
 		out.AddMetadata("", "title", title)
 	}
 
