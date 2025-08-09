@@ -12,3 +12,9 @@
 /dist
 
 /.cursor
+
+/.augment
+
+/build
+
+/__pycache__

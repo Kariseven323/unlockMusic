@@ -393,6 +393,24 @@ func (p *processor) process(inputFile string, allDec []common.DecoderFactory) er
 				logger.Warn("get audio meta failed", zap.Error(err))
 			}
 
+			// {{RIPER-5+SMART-6:
+			//   Action: "Modified"
+			//   Task_ID: "enhance-metadata-logic"
+			//   Timestamp: "2025-08-09T17:49:46+08:00"
+			//   Authoring_Subagent: "PM-direct"
+			//   Principle_Applied: "SOLID-O (开放封闭原则)"
+			//   Quality_Check: "集成智能文件名解析，保持向后兼容。"
+			// }}
+			// {{START_MODIFICATIONS}}
+			// Enhance title from filename if metadata is available
+			if params.Meta != nil {
+				params.Meta = common.EnhanceTitleFromFilename(params.Meta, inputFile)
+				logger.Debug("enhanced metadata from filename",
+					zap.String("original_file", inputFile),
+					zap.String("enhanced_title", params.Meta.GetTitle()))
+			}
+			// {{END_MODIFICATIONS}}
+
 			if params.Meta == nil { // reset audio meta if failed
 				audio, err = os.Open(params.Audio)
 				if err != nil {
