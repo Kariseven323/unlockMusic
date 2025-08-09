@@ -117,7 +117,14 @@ type ProbeDisposition struct {
 }
 
 func ProbeReader(ctx context.Context, rd io.Reader) (*Result, error) {
-	cmd := exec.CommandContext(ctx, "ffprobe",
+	// Get embedded ffprobe path, fallback to system ffprobe
+	ffprobePath, err := GetFFprobePath()
+	if err != nil {
+		// Fallback to system ffprobe
+		ffprobePath = "ffprobe"
+	}
+
+	cmd := exec.CommandContext(ctx, ffprobePath,
 		"-v", "quiet", // disable logging
 		"-print_format", "json", // use json format
 		"-show_format", "-show_streams", "-show_error", // retrieve format and streams

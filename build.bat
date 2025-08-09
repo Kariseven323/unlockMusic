@@ -1,14 +1,14 @@
 @echo off
 echo Building Unlock Music GUI...
 
-echo Step 1: Compiling Go backend...
-go build -o um.exe cmd\um\main.go
+echo Step 1: Compiling Go backend with embedded FFmpeg...
+go build -o um.exe cmd/um/main.go
 if errorlevel 1 (
     echo Failed to compile Go backend
     pause
     exit /b 1
 )
-echo Go backend compiled successfully: um.exe
+echo Go backend compiled successfully with embedded FFmpeg: um.exe
 
 echo Step 2: Installing PyInstaller...
 pip install pyinstaller

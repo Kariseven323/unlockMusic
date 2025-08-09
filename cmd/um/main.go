@@ -41,6 +41,16 @@ func main() {
 	if ok && module.Main.Version != "(devel)" {
 		AppVersion = module.Main.Version
 	}
+
+	// Initialize ffmpeg logger
+	ffmpeg.SetLogger(logger)
+
+	// Cleanup embedded binaries on exit
+	defer func() {
+		if err := ffmpeg.CleanupExtractedBinaries(); err != nil {
+			logger.Warn("failed to cleanup extracted binaries", zap.Error(err))
+		}
+	}()
 	app := cli.App{
 		Name:     "Unlock Music CLI",
 		HelpName: "um",

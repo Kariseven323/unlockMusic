@@ -4,18 +4,26 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"unlock-music.dev/cli/algo/common"
 	"unlock-music.dev/cli/internal/utils"
 )
 
 func ExtractAlbumArt(ctx context.Context, rd io.Reader) (*bytes.Buffer, error) {
-	cmd := exec.CommandContext(ctx, "ffmpeg",
+	// Get embedded ffmpeg path, fallback to system ffmpeg
+	ffmpegPath, err := GetFFmpegPath()
+	if err != nil {
+		// Fallback to system ffmpeg
+		ffmpegPath = "ffmpeg"
+	}
+
+	cmd := exec.CommandContext(ctx, ffmpegPath,
 		"-i", "pipe:0", // input from stdin
 		"-an",              // disable audio
 		"-codec:v", "copy", // copy video(image) codec

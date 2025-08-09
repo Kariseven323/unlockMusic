@@ -14,8 +14,14 @@ type ffmpegBuilder struct {
 }
 
 func newFFmpegBuilder() *ffmpegBuilder {
+	// Try to get embedded ffmpeg path, fallback to system ffmpeg
+	ffmpegPath, err := GetFFmpegPath()
+	if err != nil {
+		ffmpegPath = "ffmpeg"
+	}
+
 	return &ffmpegBuilder{
-		binary:  "ffmpeg",
+		binary:  ffmpegPath,
 		options: make(map[string]string),
 	}
 }
